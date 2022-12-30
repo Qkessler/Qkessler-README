@@ -1,0 +1,4 @@
+{
+    "run": "./readme.sh",
+    "test": "go test -v -cover ./..."
+}
