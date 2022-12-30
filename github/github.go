@@ -77,7 +77,7 @@ func GetRandomRepo(repositories []*github.Repository) *github.Repository {
 	return &repo
 }
 
-func GetReposByLanguage(repositories []*github.Repository) (map[string][]*github.Repository, error) {
+func GetReposByLanguage(repositories []*github.Repository) (map[string][]*github.Repository, []string, error) {
 	reposPerLanguage := make(map[string][]*github.Repository)
 	languageOrder := []string{}
 
@@ -95,5 +95,5 @@ func GetReposByLanguage(repositories []*github.Repository) (map[string][]*github
 		}
 	}
 
-	return reposPerLanguage, nil
+	return reposPerLanguage, languageOrder, nil
 }
