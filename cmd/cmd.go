@@ -5,11 +5,12 @@ import (
 	"embed"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	gh "github.com/Qkessler/Qkessler-README/github"
 	"github.com/Qkessler/Qkessler-README/markdown"
+	"github.com/google/go-github/github"
 )
 
 const EMBED_PATH string = "assets/static-description.md"
@@ -20,8 +21,55 @@ func WriteStaticDescription(writer io.Writer, description embed.FS) error {
 		fmt.Println("Couldn't read embedded static description path.")
 	}
 
-	_, err = fmt.Fprintf(writer, "%s", text)
+	io.WriteString(writer, string(text))
 	return err
+}
+
+func OpenFileAndWriteDescription(
+	writeDescriptionChan *chan error,
+	content embed.FS,
+	filePath string,
+) {
+	fd, err := os.OpenFile(filePath, os.O_WRONLY, 0666)
+	if err != nil {
+		fmt.Println("Couldn't open file for writing the description.")
+	}
+
+	*writeDescriptionChan <- WriteStaticDescription(fd, content)
+
+	close(*writeDescriptionChan)
+}
+
+func GetRandomRepoToString(
+	randomRepoChan *chan error,
+	readmeFileFd io.Writer,
+	svgWriter io.Writer,
+	repositories []*github.Repository,
+) {
+	randomRepo := gh.GetRandomRepo(repositories[:10])
+
+	err := markdown.WriteHighlightedRepoUrl(readmeFileFd, *randomRepo.HTMLURL)
+	if err != nil {
+		fmt.Println(err)
+	}
+	*randomRepoChan <- markdown.RepoStringToWriter(svgWriter, os.Stdout, randomRepo)
+	close(*randomRepoChan)
+}
+
+func PullReposAndLanguageOrder(
+	reposOrderChan *chan gh.LangReposAndOrder,
+	repositories *[]*github.Repository,
+) {
+	reposByLanguage, languageOrder, err := gh.GetReposByLanguage(*repositories)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	*reposOrderChan <- gh.LangReposAndOrder{
+		ReposByLang: reposByLanguage,
+		LangOrder:   languageOrder,
+	}
 }
 
 func Execute(content embed.FS) {
@@ -33,65 +81,65 @@ func Execute(content embed.FS) {
 
 	client := gh.InitGithubClient(context, accessToken)
 
+	readmeFile, err := filepath.Abs("Qkessler/README.md")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	os.Truncate(readmeFile, 0)
+	writeDescriptionChan := make(chan error)
+	go OpenFileAndWriteDescription(
+		&writeDescriptionChan,
+		content,
+		readmeFile,
+	)
+
 	repositories, err := gh.PullRepositories(&context, client)
 	if err != nil {
 		fmt.Println("Error pulling repositories: err: ", err)
 		return
 	}
 
-	file, err := ioutil.TempFile("", "README")
-	if err != nil {
-		fmt.Println("Error creating Temp file for writing.")
-	}
-	defer os.Remove(file.Name())
-
-	writeDescriptionChan := make(chan error)
-	go func() {
-		fmt.Println("file name: ", file.Name())
-		fd, err := os.OpenFile(file.Name(), os.O_WRONLY, 0666)
-		if err != nil {
-			fmt.Println("Couldn't open file for writing the description.")
-		}
-
-		writeDescriptionChan <- WriteStaticDescription(fd, content)
-
-		close(writeDescriptionChan)
-	}()
-
-	randomRepoChan := make(chan string)
-	go func() {
-		randomRepo := gh.GetRandomRepo(repositories[:10])
-		randomRepoChan <- markdown.RepoStringToWriter(os.Stdout, os.Stdout, randomRepo)
-		close(randomRepoChan)
-	}()
-
-	reposByLanguageChan := make(chan gh.LangReposAndOrder)
-	go func() {
-		repositories, languageOrder, err := gh.GetReposByLanguage(repositories)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		reposByLanguageChan <- gh.LangReposAndOrder{
-			ReposByLang: repositories,
-			LangOrder:   languageOrder,
-		}
-	}()
-
 	descriptionError := <-writeDescriptionChan
 	if descriptionError != nil {
 		fmt.Println("Error writing description: ", err)
+		return
 	}
-	fmt.Println("Wrote description:")
-	bytes, err := os.ReadFile(file.Name())
+
+	svgPath, err := filepath.Abs("Qkessler/src/repo-card.svg")
 	if err != nil {
-		fmt.Println("Error reading file after writing description.")
+		fmt.Println(err)
+		return
+	}
+
+	os.Truncate(svgPath, 0)
+	fd, err := os.OpenFile(svgPath, os.O_RDWR|os.O_CREATE, 0644)
+	if err != nil {
+		fmt.Println("Couldn't open file for random repo.")
+		return
+	}
+
+	readmeFileFd, err := os.OpenFile(readmeFile, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0644)
+	if err != nil {
+		fmt.Println("Open readme file for appending failed")
+	}
+	randomRepoChan := make(chan error)
+	go GetRandomRepoToString(&randomRepoChan, readmeFileFd, fd, repositories)
+
+	randomRepoError := <-randomRepoChan
+	if randomRepoError != nil {
+		fmt.Println("Error reading the randomRepo and writing to file: ", randomRepoError)
+		return
+	}
+
+	fmt.Println("Wrote description:")
+	bytes, err := os.ReadFile(readmeFile)
+	if err != nil {
+		fmt.Println("Error reading file after writing description: ", descriptionError)
+		return
 	}
 	fmt.Println(string(bytes))
 
-	randomRepo := <-randomRepoChan
-	fmt.Println(randomRepo)
-
-	reposByLanguage, order := <-reposByLanguageChan
-	fmt.Println(reposByLanguage, order)
+	// reposByLanguage, order := <-reposByLanguageChan
+	// fmt.Println(reposByLanguage, order)
 }

@@ -1,14 +1,16 @@
 package markdown
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"html/template"
 	"io"
-	"strings"
 
 	"github.com/google/go-github/github"
 )
 
+const ERROR_FIELDS_NIL string = "Name or language is Nil, or Description or URL is nil: %t, %t. Repo name: %s"
 const FORMAT_STRING string = "%s, %s, %s, %s"
 const TEMPLATE_STRING = `
 <svg fill="none" viewBox="0 0 400 400" width="400" height="400" xmlns="http://www.w3.org/2000/svg">
@@ -18,6 +20,7 @@ const TEMPLATE_STRING = `
         .card {
 			width: 300px;
 			box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+			background: white;
 			border-radius: 5px;
 			overflow: hidden;
 			margin: 20px;
@@ -68,18 +71,50 @@ const TEMPLATE_STRING = `
   </foreignObject>
 </svg>`
 
-func RepoStringToWriter(writer io.Writer, logWriter io.Writer, repository *github.Repository) string {
+const REPO_URL_TEMPLATE string = `
+<div align="center">
+    <a href="{{.Url}}">
+        <img src="src/repo-card.svg" width="400" height="400" alt="Repo card which links to the Repo itself, in Github.">
+    </a>
+</div>
+`
+
+func WriteHighlightedRepoUrl(writer io.Writer, url string) error {
+	data := struct {
+		Url string
+	}{
+		Url: url,
+	}
+
+	return WriteTemplateToWriter(writer, REPO_URL_TEMPLATE, data)
+}
+
+func WriteTemplateToWriter(writer io.Writer, templateString string, data any) error {
+	templateParser, err := template.New("webpage").Parse(templateString)
+	if err != nil {
+		return err
+	}
+	var output bytes.Buffer
+	err = templateParser.Execute(&output, data)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.WriteString(writer, output.String())
+	return err
+}
+
+func RepoStringToWriter(writer io.Writer, logWriter io.Writer, repository *github.Repository) error {
 	nameOrLanguageNil := repository.Name == nil || repository.Language == nil
 	descriptionOrURLNil := repository.Description == nil || repository.HTMLURL == nil
 	if nameOrLanguageNil || descriptionOrURLNil {
-		return ""
-	}
-
-	t, err := template.New("webpage").Parse(TEMPLATE_STRING)
-	if err != nil {
-		// Won't happen until we change the constant `TEMPLATE_STRING` or could be
-		// a new Go version.
-		fmt.Fprintf(logWriter, "Error when building template: %s", err)
+		fmt.Printf("descriptionOrURL: %+v, %+v\n", repository.Description, repository.HTMLURL)
+		return errors.New(
+			fmt.Sprintf(ERROR_FIELDS_NIL,
+				nameOrLanguageNil,
+				descriptionOrURLNil,
+				*repository.Name,
+			))
 	}
 
 	data := struct {
@@ -93,15 +128,6 @@ func RepoStringToWriter(writer io.Writer, logWriter io.Writer, repository *githu
 		ImageSrc:    "",
 		Description: *repository.Description,
 	}
-	err = t.Execute(writer, data)
 
-	builder := strings.Builder{}
-	builder.WriteString(fmt.Sprintf(FORMAT_STRING,
-		*repository.Name,
-		*repository.Language,
-		*repository.Description,
-		*repository.HTMLURL,
-	))
-
-	return builder.String()
+	return WriteTemplateToWriter(writer, TEMPLATE_STRING, data)
 }
