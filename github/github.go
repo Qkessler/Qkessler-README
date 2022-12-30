@@ -90,8 +90,7 @@ func GetReposByLanguage(repositories []*github.Repository) (map[string][]*github
 
 	for _, repo := range repositories {
 		language := repo.Language
-		isFork := repo.Fork
-		if language == nil || isFork == nil || *isFork == true {
+		if language == nil {
 			continue
 		}
 
