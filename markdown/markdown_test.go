@@ -1,14 +1,19 @@
 package markdown
 
 import (
+	"bytes"
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/google/go-github/github"
 )
 
 func TestRepoToString(t *testing.T) {
-	repo := RepoToString(
+	var output bytes.Buffer
+	repo := RepoStringToWriter(
+		&output,
+		&output,
 		&github.Repository{
 			Name:        github.String("test"),
 			Language:    github.String("Language"),
@@ -22,7 +27,9 @@ func TestRepoToString(t *testing.T) {
 }
 
 func TestRepoToStringNilLanguage(t *testing.T) {
-	repo := RepoToString(
+	repo := RepoStringToWriter(
+		os.Stdout,
+		os.Stdout,
 		&github.Repository{
 			Name:     github.String("test"),
 			Language: nil,

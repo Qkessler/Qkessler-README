@@ -3,6 +3,7 @@ package github
 import (
 	"context"
 	"math/rand"
+	"time"
 
 	"github.com/google/go-github/github"
 	"golang.org/x/oauth2"
@@ -61,9 +62,10 @@ func GetRandomRepo(repositories []*github.Repository) *github.Repository {
 	if len(repositories) == 0 {
 		return nil
 	}
-
 	var repo github.Repository
 	visited := map[int]bool{}
+
+    rand.Seed(time.Now().UnixNano())
 	for {
 		if len(visited) == len(repositories) {
 			return nil

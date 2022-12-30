@@ -26,7 +26,8 @@ func Execute() {
 
 	randomRepoChan := make(chan string)
 	go func() {
-		randomRepoChan <- markdown.RepoToString(gh.GetRandomRepo(repositories[:10]))
+		randomRepo := gh.GetRandomRepo(repositories[:10])
+		randomRepoChan <- markdown.RepoStringToWriter(os.Stdout, os.Stdout, randomRepo)
 		close(randomRepoChan)
 	}()
 
