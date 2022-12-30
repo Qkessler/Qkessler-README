@@ -2,13 +2,14 @@ package github
 
 import (
 	"context"
-	"fmt"
+	"math/rand"
 
 	"github.com/google/go-github/github"
 	"golang.org/x/oauth2"
 )
 
 const PER_PAGE_NUMBER int = 50
+const UNCATEGORIZED string = "Uncategorized"
 
 func InitGithubClient(context context.Context, accessToken string) *github.Client {
 	tokenSource := oauth2.StaticTokenSource(
@@ -27,7 +28,11 @@ func PullRepositories(
 ) ([]*github.Repository, error) {
 	allRepos := []*github.Repository{}
 	options := github.RepositoryListOptions{
-		ListOptions: github.ListOptions{PerPage: PER_PAGE_NUMBER},
+		ListOptions: github.ListOptions{
+			PerPage: PER_PAGE_NUMBER,
+		},
+		Type: "public",
+		Sort: "updated",
 	}
 
 	for {
@@ -45,4 +50,50 @@ func PullRepositories(
 	}
 
 	return allRepos, nil
+}
+
+func GetRandomRepo(repositories []*github.Repository) *github.Repository {
+	if len(repositories) == 0 {
+		return nil
+	}
+	
+	var repo github.Repository
+	visited := map[int]bool{}
+	for {
+		if len(visited) == len(repositories) {
+			return nil
+		}
+		randomIndex := rand.Intn(len(repositories))
+		if present, _ := visited[randomIndex]; !present {
+			visited[randomIndex] = true
+		}
+
+		repo = *repositories[randomIndex]
+		if repo.Fork != nil && *repo.Fork == false {
+			break
+		}
+	}
+
+	return &repo
+}
+
+func GetReposByLanguage(repositories []*github.Repository) (map[string][]*github.Repository, error) {
+	reposPerLanguage := make(map[string][]*github.Repository)
+	languageOrder := []string{}
+
+	for _, repo := range repositories {
+		language := repo.Language
+		if language == nil {
+			continue
+		}
+
+		if repoSlice, present := reposPerLanguage[*language]; present {
+			reposPerLanguage[*language] = append(repoSlice, repo)
+		} else {
+			reposPerLanguage[*language] = []*github.Repository{repo}
+			languageOrder = append(languageOrder, *language)
+		}
+	}
+
+	return reposPerLanguage, nil
 }
