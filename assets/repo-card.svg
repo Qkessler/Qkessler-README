@@ -1,0 +1,56 @@
+<svg fill="none" viewBox="0 0 400 400" width="400" height="400" xmlns="http://www.w3.org/2000/svg">
+  <foreignObject width="100%" height="100%">
+    <div xmlns="http://www.w3.org/1999/xhtml">
+      <style>
+        .card {
+        width: 300px;
+        box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+        border-radius: 5px;
+        overflow: hidden;
+        margin: 20px;
+        text-align: center;
+        font-family: Arial, Helvetica, sans-serif;
+        }
+
+        .card-link {
+        text-decoration: none;
+        color: black;
+        }
+
+        .card-header {
+        display: flex;
+        padding: 0px 20px 0px 10px;
+        align-items: center;
+        }
+
+        .card-title {
+        margin: 20px;
+        font-size: 18px;
+        font-weight: bold;
+        }
+
+        .card-logo {
+        height: 25px;
+        margin-left: 10px;
+        }
+
+        .card-description {
+        margin: 20px;
+        font-size: 14px;
+        text-align: center;
+        }
+      </style>
+      <div class="card">
+        <a href="https://github.com/Qkessler/santander-ledger" class="card-link">
+          <div class="card-header">
+            <h3 class="card-title">way-longer</h3>
+            <a href="https://flutter.dev/" target="_blank">
+              <img src="https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&amp;logo=flutter&amp;logoColor=white" alt="Flutter logo" class="card-logo" />
+            </a>
+          </div>
+          <p class="card-description">pull the transactions from a santander account and create ledger transactions</p>
+        </a>
+      </div>
+    </div>
+  </foreignObject>
+</svg>

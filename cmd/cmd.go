@@ -10,7 +10,7 @@ import (
 )
 
 func Execute() {
-	// To be able to use this, we should run `pass show GH_ACCESS_TOKEN`
+	// To be able to use this, we should run `pass show gh-access-token`
 	// to build the env variable before running this.
 	accessToken := os.Getenv("GH_ACCESS_TOKEN")
 
