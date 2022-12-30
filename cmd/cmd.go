@@ -7,7 +7,6 @@ import (
 
 	gh "github.com/Qkessler/Qkessler-README/github"
 	"github.com/Qkessler/Qkessler-README/markdown"
-	"github.com/google/go-github/github"
 )
 
 func Execute() {
@@ -26,24 +25,27 @@ func Execute() {
 	}
 
 	randomRepoChan := make(chan string)
-	go func () {
+	go func() {
 		randomRepoChan <- markdown.RepoToString(gh.GetRandomRepo(repositories[:10]))
 		close(randomRepoChan)
 	}()
 
-	reposByLanguageChan := make(chan map[string][]*github.Repository)
+	reposByLanguageChan := make(chan gh.LangReposAndOrder)
 	go func() {
-		repositories, err := gh.GetReposByLanguage(repositories)
+		repositories, languageOrder, err := gh.GetReposByLanguage(repositories)
 		if err != nil {
 			fmt.Println(err)
-			return 
+			return
 		}
-		reposByLanguageChan <- repositories
+		reposByLanguageChan <- gh.LangReposAndOrder{
+			ReposByLang: repositories,
+			LangOrder:   languageOrder,
+		}
 	}()
 
-	randomRepo := <- randomRepoChan
+	randomRepo := <-randomRepoChan
 	fmt.Println(randomRepo)
 
-	reposByLanguage := <- reposByLanguageChan
-	fmt.Println(reposByLanguage)
+	reposByLanguage, order := <-reposByLanguageChan
+	fmt.Println(reposByLanguage, order)
 }

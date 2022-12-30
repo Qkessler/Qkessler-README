@@ -11,6 +11,11 @@ import (
 const PER_PAGE_NUMBER int = 50
 const UNCATEGORIZED string = "Uncategorized"
 
+type LangReposAndOrder struct {
+	ReposByLang map[string][]*github.Repository
+	LangOrder   []string
+}
+
 func InitGithubClient(context context.Context, accessToken string) *github.Client {
 	tokenSource := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: accessToken},
@@ -56,7 +61,7 @@ func GetRandomRepo(repositories []*github.Repository) *github.Repository {
 	if len(repositories) == 0 {
 		return nil
 	}
-	
+
 	var repo github.Repository
 	visited := map[int]bool{}
 	for {
