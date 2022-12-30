@@ -75,9 +75,11 @@ func TestGetRandomRepoOneGoodOneFork(t *testing.T) {
 func TestGetReposByLanguageSameLanguage(t *testing.T) {
 	repository := github.Repository{
 		Language: github.String("Language"),
+		Fork:     github.Bool(false),
 	}
 	repository2 := github.Repository{
 		Language: github.String("Language"),
+		Fork:     github.Bool(false),
 	}
 	repos := []*github.Repository{
 		&repository,
@@ -114,12 +116,60 @@ func TestGetReposByLanguageNilLanguage(t *testing.T) {
 	}
 }
 
+func TestGetReposByLanguageWithForkNil(t *testing.T) {
+	repository := github.Repository{
+		Language: github.String("Language"),
+	}
+	repository2 := github.Repository{
+		Language: github.String("Language"),
+	}
+	repos := []*github.Repository{
+		&repository,
+		&repository2,
+	}
+
+	reposByLang, _, err := GetReposByLanguage(repos)
+	if err != nil {
+		t.Fatalf("Function shouldn't error with right input")
+	}
+
+	if !reflect.DeepEqual(reposByLang, map[string][]*github.Repository{}) {
+		t.Fatalf("No repos since they are all forks: %s", reposByLang)
+	}
+}
+
+func TestGetReposByLanguageWithForkTrue(t *testing.T) {
+	repository := github.Repository{
+		Language: github.String("Language"),
+		Fork: github.Bool(true),
+	}
+	repository2 := github.Repository{
+		Language: github.String("Language"),
+		Fork: github.Bool(true),
+	}
+	repos := []*github.Repository{
+		&repository,
+		&repository2,
+	}
+
+	reposByLang, _, err := GetReposByLanguage(repos)
+	if err != nil {
+		t.Fatalf("Function shouldn't error with right input")
+	}
+
+	if !reflect.DeepEqual(reposByLang, map[string][]*github.Repository{}) {
+		t.Fatalf("No repos since they are all forks: %s", reposByLang)
+	}
+}
+
 func TestGetReposByLanguageOrder(t *testing.T) {
 	repository := github.Repository{
 		Language: github.String("1"),
+		Fork: github.Bool(false),
 	}
 	repository2 := github.Repository{
 		Language: github.String("2"),
+		Fork: github.Bool(false),
 	}
 	repos := []*github.Repository{
 		&repository,
