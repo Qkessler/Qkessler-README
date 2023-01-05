@@ -13,8 +13,16 @@ const PER_PAGE_NUMBER int = 50
 const UNCATEGORIZED string = "Uncategorized"
 
 type LangReposAndOrder struct {
-	ReposByLang map[string][]*github.Repository
+	ReposByLang map[string][]*PersonalRepo
 	LangOrder   []string
+}
+
+type PersonalRepo struct {
+	Name        string
+	Description string
+	Fork        bool
+	Language    string
+	URL         string
 }
 
 func InitGithubClient(context context.Context, accessToken string) *github.Client {
@@ -31,8 +39,9 @@ func InitGithubClient(context context.Context, accessToken string) *github.Clien
 func PullRepositories(
 	context *context.Context,
 	client *github.Client,
-) ([]*github.Repository, error) {
+) ([]*PersonalRepo, error) {
 	allRepos := []*github.Repository{}
+	personalRepos := []*PersonalRepo{}
 	options := github.RepositoryListOptions{
 		ListOptions: github.ListOptions{
 			PerPage: PER_PAGE_NUMBER,
@@ -44,7 +53,7 @@ func PullRepositories(
 	for {
 		repoList, response, err := client.Repositories.List(*context, "", &options)
 		if err != nil {
-			return allRepos, err
+			return personalRepos, err
 		}
 
 		allRepos = append(allRepos, repoList...)
@@ -55,17 +64,35 @@ func PullRepositories(
 		options.Page = response.NextPage
 	}
 
-	return allRepos, nil
+	for _, repo := range allRepos {
+		if repo.Name == nil ||
+			repo.Description == nil ||
+			repo.Fork == nil ||
+			repo.Language == nil ||
+			repo.HTMLURL == nil {
+			continue
+		}
+
+		personalRepos = append(personalRepos, &PersonalRepo{
+			Name:        *repo.Name,
+			Description: *repo.Description,
+			Fork:        *repo.Fork,
+			Language:    *repo.Language,
+			URL:         *repo.HTMLURL,
+		})
+	}
+
+	return personalRepos, nil
 }
 
-func GetRandomRepo(repositories []*github.Repository) *github.Repository {
+func GetRandomRepo(repositories []*PersonalRepo) *PersonalRepo {
 	if len(repositories) == 0 {
 		return nil
 	}
-	var repo github.Repository
+	var repo PersonalRepo
 	visited := map[int]bool{}
 
-    rand.Seed(time.Now().UnixNano())
+	rand.Seed(time.Now().UnixNano())
 	for {
 		if len(visited) == len(repositories) {
 			return nil
@@ -76,7 +103,7 @@ func GetRandomRepo(repositories []*github.Repository) *github.Repository {
 		}
 
 		repo = *repositories[randomIndex]
-		if repo.Fork != nil && *repo.Fork == false {
+		if repo.Fork == false {
 			break
 		}
 	}
@@ -84,21 +111,18 @@ func GetRandomRepo(repositories []*github.Repository) *github.Repository {
 	return &repo
 }
 
-func GetReposByLanguage(repositories []*github.Repository) (map[string][]*github.Repository, []string, error) {
-	reposPerLanguage := make(map[string][]*github.Repository)
+func GetReposByLanguage(repositories []*PersonalRepo) (map[string][]*PersonalRepo, []string, error) {
+	reposPerLanguage := make(map[string][]*PersonalRepo)
 	languageOrder := []string{}
 
 	for _, repo := range repositories {
 		language := repo.Language
-		if language == nil {
-			continue
-		}
 
-		if repoSlice, present := reposPerLanguage[*language]; present {
-			reposPerLanguage[*language] = append(repoSlice, repo)
+		if repoSlice, present := reposPerLanguage[language]; present {
+			reposPerLanguage[language] = append(repoSlice, repo)
 		} else {
-			reposPerLanguage[*language] = []*github.Repository{repo}
-			languageOrder = append(languageOrder, *language)
+			reposPerLanguage[language] = []*PersonalRepo{repo}
+			languageOrder = append(languageOrder, language)
 		}
 	}
 

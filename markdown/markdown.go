@@ -2,12 +2,10 @@ package markdown
 
 import (
 	"bytes"
-	"errors"
-	"fmt"
 	"html/template"
 	"io"
 
-	"github.com/google/go-github/github"
+	"github.com/Qkessler/Qkessler-README/github"
 )
 
 const ERROR_FIELDS_NIL string = "Name or language is Nil, or Description or URL is nil: %t, %t. Repo name: %s"
@@ -104,29 +102,17 @@ func WriteTemplateToWriter(writer io.Writer, templateString string, data any) er
 	return err
 }
 
-func RepoStringToWriter(writer io.Writer, logWriter io.Writer, repository *github.Repository) error {
-	nameOrLanguageNil := repository.Name == nil || repository.Language == nil
-	descriptionOrURLNil := repository.Description == nil || repository.HTMLURL == nil
-	if nameOrLanguageNil || descriptionOrURLNil {
-		fmt.Printf("descriptionOrURL: %+v, %+v\n", repository.Description, repository.HTMLURL)
-		return errors.New(
-			fmt.Sprintf(ERROR_FIELDS_NIL,
-				nameOrLanguageNil,
-				descriptionOrURLNil,
-				*repository.Name,
-			))
-	}
-
+func RepoStringToWriter(writer io.Writer, logWriter io.Writer, repository *github.PersonalRepo) error {
 	data := struct {
 		Name        string
 		Url         string
 		ImageSrc    string
 		Description string
 	}{
-		Name:        *repository.Name,
-		Url:         *repository.HTMLURL,
+		Name:        repository.Name,
+		Url:         repository.URL,
 		ImageSrc:    "",
-		Description: *repository.Description,
+		Description: repository.Description,
 	}
 
 	return WriteTemplateToWriter(writer, TEMPLATE_STRING, data)

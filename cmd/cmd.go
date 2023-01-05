@@ -8,12 +8,12 @@ import (
 	"os"
 	"path/filepath"
 
-	gh "github.com/Qkessler/Qkessler-README/github"
+	"github.com/Qkessler/Qkessler-README/github"
 	"github.com/Qkessler/Qkessler-README/markdown"
-	"github.com/google/go-github/github"
 )
 
 const EMBED_PATH string = "assets/static-description.md"
+const CHUNK_SIZE int = 2
 
 func WriteStaticDescription(writer io.Writer, description embed.FS) error {
 	text, err := description.ReadFile(EMBED_PATH)
@@ -44,11 +44,11 @@ func GetRandomRepoToString(
 	randomRepoChan *chan error,
 	readmeFileFd io.Writer,
 	svgWriter io.Writer,
-	repositories []*github.Repository,
+	repositories []*github.PersonalRepo,
 ) {
-	randomRepo := gh.GetRandomRepo(repositories[:10])
+	randomRepo := github.GetRandomRepo(repositories[:10])
 
-	err := markdown.WriteHighlightedRepoUrl(readmeFileFd, *randomRepo.HTMLURL)
+	err := markdown.WriteHighlightedRepoUrl(readmeFileFd, randomRepo.URL)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -57,19 +57,20 @@ func GetRandomRepoToString(
 }
 
 func PullReposAndLanguageOrder(
-	reposOrderChan *chan gh.LangReposAndOrder,
-	repositories *[]*github.Repository,
+	reposOrderChan *chan github.LangReposAndOrder,
+	repositories *[]*github.PersonalRepo,
 ) {
-	reposByLanguage, languageOrder, err := gh.GetReposByLanguage(*repositories)
+	reposByLanguage, languageOrder, err := github.GetReposByLanguage(*repositories)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	*reposOrderChan <- gh.LangReposAndOrder{
+	*reposOrderChan <- github.LangReposAndOrder{
 		ReposByLang: reposByLanguage,
 		LangOrder:   languageOrder,
 	}
+	close(*reposOrderChan)
 }
 
 func Execute(content embed.FS) {
@@ -79,7 +80,7 @@ func Execute(content embed.FS) {
 
 	context := context.Background()
 
-	client := gh.InitGithubClient(context, accessToken)
+	client := github.InitGithubClient(context, accessToken)
 
 	readmeFile, err := filepath.Abs("Qkessler/README.md")
 	if err != nil {
@@ -94,15 +95,9 @@ func Execute(content embed.FS) {
 		readmeFile,
 	)
 
-	repositories, err := gh.PullRepositories(&context, client)
+	repositories, err := github.PullRepositories(&context, client)
 	if err != nil {
 		fmt.Println("Error pulling repositories: err: ", err)
-		return
-	}
-
-	descriptionError := <-writeDescriptionChan
-	if descriptionError != nil {
-		fmt.Println("Error writing description: ", err)
 		return
 	}
 
@@ -113,7 +108,7 @@ func Execute(content embed.FS) {
 	}
 
 	os.Truncate(svgPath, 0)
-	fd, err := os.OpenFile(svgPath, os.O_RDWR|os.O_CREATE, 0644)
+	svgFd, err := os.OpenFile(svgPath, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		fmt.Println("Couldn't open file for random repo.")
 		return
@@ -124,7 +119,16 @@ func Execute(content embed.FS) {
 		fmt.Println("Open readme file for appending failed")
 	}
 	randomRepoChan := make(chan error)
-	go GetRandomRepoToString(&randomRepoChan, readmeFileFd, fd, repositories)
+	go GetRandomRepoToString(&randomRepoChan, readmeFileFd, svgFd, repositories)
+
+	reposByLanguageChan := make(chan github.LangReposAndOrder)
+	go PullReposAndLanguageOrder(&reposByLanguageChan, &repositories)
+
+	descriptionError := <-writeDescriptionChan
+	if descriptionError != nil {
+		fmt.Println("Error writing description: ", err)
+		return
+	}
 
 	randomRepoError := <-randomRepoChan
 	if randomRepoError != nil {
@@ -140,6 +144,26 @@ func Execute(content embed.FS) {
 	}
 	fmt.Println(string(bytes))
 
-	// reposByLanguage, order := <-reposByLanguageChan
-	// fmt.Println(reposByLanguage, order)
+	reposAndOrder := <-reposByLanguageChan
+	reposByLang := reposAndOrder.ReposByLang
+	for lang, repos := range reposByLang {
+		fmt.Printf("Lang: %s\n", lang)
+		for index, repo := range repos {
+			fmt.Println(index, *repo)
+		}
+	}
+	langOrder := reposAndOrder.LangOrder
+	// for range for langOrder
+	// access reposByLang for the language
+	// build markdown table that we'll display on our Readme.
+
+	// When adding the repos itselves, let's add Qkessler/Name, so we have more or
+	// less the same length
+
+	// Let's divide the number of languages in two.
+	chunks := make([][]string, 0, (len(langOrder)+CHUNK_SIZE-1)/CHUNK_SIZE)
+	for CHUNK_SIZE < len(langOrder) {
+		langOrder, chunks = langOrder[CHUNK_SIZE:], append(chunks, langOrder[0:CHUNK_SIZE:CHUNK_SIZE])
+	}
+	chunks = append(chunks, langOrder)
 }
