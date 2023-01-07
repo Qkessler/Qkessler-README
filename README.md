@@ -32,7 +32,7 @@ Below you'll find a featured repo, which is **one of my 10th last updated**. Bel
 
 <div align="center">
     <a href="https://github.com/Qkessler/consult-project-extra">
-        <img src="src/repo-card.svg" alt="Repo card which links to the Repo itself, in Github.">
+        <img src="Qkessler/src/repo-card.svg" alt="Repo card which links to the Repo itself, in Github.">
     </a>
 </div>
 
