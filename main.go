@@ -7,7 +7,7 @@ import (
 )
 
 //go:embed assets/static-description.md
-var staticDescriptionContent embed.FS 
+var staticDescriptionContent embed.FS
 
 func main() {
 	cmd.Execute(staticDescriptionContent)

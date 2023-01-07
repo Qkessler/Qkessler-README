@@ -2,6 +2,7 @@ package markdown
 
 import (
 	"bytes"
+	"errors"
 	"html/template"
 	"io"
 
@@ -77,6 +78,10 @@ const REPO_URL_TEMPLATE string = `
 </div>
 `
 
+const REPO_ON_TABLE_TEMPLATE string = `
+| [Qkessler/{{.Name1}}]({{.Url1}}) | {{if .Name2}} [Qkessler/{{.Name2}}]({{.Url2}}) {{end}} |
+`
+
 func WriteHighlightedRepoUrl(writer io.Writer, url string) error {
 	data := struct {
 		Url string
@@ -102,7 +107,7 @@ func WriteTemplateToWriter(writer io.Writer, templateString string, data any) er
 	return err
 }
 
-func RepoStringToWriter(writer io.Writer, logWriter io.Writer, repository *github.PersonalRepo) error {
+func RepoStringToWriter(writer io.Writer, repository *github.PersonalRepo) error {
 	data := struct {
 		Name        string
 		Url         string
@@ -116,4 +121,36 @@ func RepoStringToWriter(writer io.Writer, logWriter io.Writer, repository *githu
 	}
 
 	return WriteTemplateToWriter(writer, TEMPLATE_STRING, data)
+}
+
+func RepoToStringOnTable(
+	writer io.Writer,
+	repository1 *github.PersonalRepo,
+	repository2 *github.PersonalRepo,
+) error {
+	if repository1 == nil {
+		return errors.New("Can't have nil as the first repository.")
+	}
+
+	data := struct {
+		Name1 string
+		Url1  string
+		Name2 string
+		Url2  string
+	}{
+		Name1: repository1.Name,
+		Url1:  repository1.URL,
+		Name2: getOrDefault(repository2).Name,
+		Url2:  getOrDefault(repository2).URL,
+	}
+
+	return WriteTemplateToWriter(writer, REPO_ON_TABLE_TEMPLATE, data)
+}
+
+func getOrDefault[T comparable](t *T) T {
+	if t == nil {
+		return *new(T)
+	}
+
+	return *t
 }

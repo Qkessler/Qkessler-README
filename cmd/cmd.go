@@ -52,7 +52,7 @@ func GetRandomRepoToString(
 	if err != nil {
 		fmt.Println(err)
 	}
-	*randomRepoChan <- markdown.RepoStringToWriter(svgWriter, os.Stdout, randomRepo)
+	*randomRepoChan <- markdown.RepoStringToWriter(svgWriter, randomRepo)
 	close(*randomRepoChan)
 }
 
@@ -109,15 +109,18 @@ func Execute(content embed.FS) {
 
 	os.Truncate(svgPath, 0)
 	svgFd, err := os.OpenFile(svgPath, os.O_RDWR|os.O_CREATE, 0644)
+	defer svgFd.Close()
 	if err != nil {
 		fmt.Println("Couldn't open file for random repo.")
 		return
 	}
 
 	readmeFileFd, err := os.OpenFile(readmeFile, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0644)
+	defer readmeFileFd.Close()
 	if err != nil {
 		fmt.Println("Open readme file for appending failed")
 	}
+
 	randomRepoChan := make(chan error)
 	go GetRandomRepoToString(&randomRepoChan, readmeFileFd, svgFd, repositories)
 
@@ -153,17 +156,59 @@ func Execute(content embed.FS) {
 		}
 	}
 	langOrder := reposAndOrder.LangOrder
-	// for range for langOrder
-	// access reposByLang for the language
-	// build markdown table that we'll display on our Readme.
 
-	// When adding the repos itselves, let's add Qkessler/Name, so we have more or
-	// less the same length
+	for _, chunk := range chunks(&langOrder, CHUNK_SIZE) {
+		first, second := chunk[0], chunk[1]
+		fmt.Fprintf(readmeFileFd, "|  %s  |  %s  |\n| :--: | :--: |\n", first, second)
 
-	// Let's divide the number of languages in two.
-	chunks := make([][]string, 0, (len(langOrder)+CHUNK_SIZE-1)/CHUNK_SIZE)
-	for CHUNK_SIZE < len(langOrder) {
-		langOrder, chunks = langOrder[CHUNK_SIZE:], append(chunks, langOrder[0:CHUNK_SIZE:CHUNK_SIZE])
+		firstRepos := reposByLang[first]
+		secondRepos := reposByLang[second]
+
+		joinedSlices := joinSlices(&firstRepos, &secondRepos)
+		fmt.Println("JOINED: ")
+		for _, v := range joinedSlices {
+			fmt.Println(v)
+		}
+		fmt.Println("END JOINED.")
+		for _, repoChunk := range chunks(&joinedSlices, CHUNK_SIZE) {
+			first, second := repoChunk[0], repoChunk[1]
+			markdown.RepoToStringOnTable(readmeFileFd, first, second)
+		}
 	}
-	chunks = append(chunks, langOrder)
+}
+
+func chunks[T comparable](slice *[]T, chunkSize int) [][]T {
+	chunks := make([][]T, 0, (len(*slice)+chunkSize-1)/chunkSize)
+	for chunkSize < len(*slice) {
+		*slice, chunks = (*slice)[chunkSize:], append(chunks, (*slice)[0:chunkSize:chunkSize])
+	}
+
+	return append(chunks, *slice)
+}
+
+func joinSlices[T comparable](slice1 *[]T, slice2 *[]T) []T {
+	result := []T{}
+	i := 0
+	j := 0
+
+	for i < len(*slice1) && j < len(*slice2) {
+		result = append(result, (*slice1)[i])
+		result = append(result, (*slice2)[j])
+		i += 1
+		j += 1
+	}
+
+	var rest []T
+	if i < len(*slice1) {
+		rest = (*slice1)[i:]
+	} else {
+		rest = (*slice2)[j:]
+	}
+
+	for _, value := range rest {
+		result = append(result, value)
+		result = append(result, *new(T))
+	}
+
+	return result
 }
