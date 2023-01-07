@@ -8,6 +8,10 @@ If you want to use this or contribute, you can get the Go project by cloning thi
 
 ```
 git clone https://github.com/Qkessler/Qkessler-README
+
+and 
+
+go build -o generate-readme
 ```
 
 and then inspecting the `./readme.sh` file, that contains information on how to set the `GH_ACCESS_TOKEN` environment variable, that contains the access token to Github API. I personally use `pass` to manage my passwords, and if you do too, you can just add an entry called `gh-access-token`.

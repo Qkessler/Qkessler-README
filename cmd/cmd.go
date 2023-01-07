@@ -142,22 +142,8 @@ func Execute(content embed.FS) {
 		return
 	}
 
-	fmt.Println("Wrote description:")
-	bytes, err := os.ReadFile(readmeFile)
-	if err != nil {
-		fmt.Println("Error reading file after writing description: ", descriptionError)
-		return
-	}
-	fmt.Println(string(bytes))
-
 	reposAndOrder := <-reposByLanguageChan
 	reposByLang := reposAndOrder.ReposByLang
-	for lang, repos := range reposByLang {
-		fmt.Printf("Lang: %s\n", lang)
-		for index, repo := range repos {
-			fmt.Println(index, *repo)
-		}
-	}
 	langOrder := reposAndOrder.LangOrder
 
 	isHeader := true
@@ -174,11 +160,6 @@ func Execute(content embed.FS) {
 		secondRepos := reposByLang[second]
 
 		joinedSlices := joinSlices(&firstRepos, &secondRepos)
-		fmt.Println("JOINED: ")
-		for _, v := range joinedSlices {
-			fmt.Println(v)
-		}
-		fmt.Println("END JOINED.")
 		for _, repoChunk := range chunks(&joinedSlices, CHUNK_SIZE) {
 			first, second := repoChunk[0], repoChunk[1]
 			markdown.RepoToStringOnTable(readmeFileFd, first, second)
