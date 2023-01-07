@@ -15,10 +15,11 @@ import (
 const EMBED_PATH string = "assets/static-description.md"
 const CHUNK_SIZE int = 2
 
-func WriteStaticDescription(writer io.Writer, description embed.FS) error {
-	text, err := description.ReadFile(EMBED_PATH)
+func WriteStaticDescription(writer io.Writer, description embed.FS, path string) error {
+	text, err := description.ReadFile(path)
 	if err != nil {
 		fmt.Println("Couldn't read embedded static description path.")
+		return err
 	}
 
 	io.WriteString(writer, string(text))
@@ -33,9 +34,11 @@ func OpenFileAndWriteDescription(
 	fd, err := os.OpenFile(filePath, os.O_WRONLY, 0666)
 	if err != nil {
 		fmt.Println("Couldn't open file for writing the description.")
+		close(*writeDescriptionChan)
+		return
 	}
 
-	*writeDescriptionChan <- WriteStaticDescription(fd, content)
+	*writeDescriptionChan <- WriteStaticDescription(fd, content, EMBED_PATH)
 
 	close(*writeDescriptionChan)
 }
@@ -157,9 +160,15 @@ func Execute(content embed.FS) {
 	}
 	langOrder := reposAndOrder.LangOrder
 
+	isHeader := true
+	fmt.Fprint(readmeFileFd, "<div align='center'>\n\n")
 	for _, chunk := range chunks(&langOrder, CHUNK_SIZE) {
 		first, second := chunk[0], chunk[1]
-		fmt.Fprintf(readmeFileFd, "|  %s  |  %s  |\n| :--: | :--: |\n", first, second)
+		fmt.Fprintf(readmeFileFd, "|  **%s**  |  **%s**  |\n", first, second)
+		if isHeader {
+			fmt.Fprintf(readmeFileFd, "| :--: | :--: |\n")
+			isHeader = false
+		}
 
 		firstRepos := reposByLang[first]
 		secondRepos := reposByLang[second]
@@ -175,6 +184,8 @@ func Execute(content embed.FS) {
 			markdown.RepoToStringOnTable(readmeFileFd, first, second)
 		}
 	}
+
+	fmt.Fprint(readmeFileFd, "\n</div>\n")
 }
 
 func chunks[T comparable](slice *[]T, chunkSize int) [][]T {
