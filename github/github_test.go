@@ -3,16 +3,14 @@ package github
 import (
 	"reflect"
 	"testing"
-
-	"github.com/google/go-github/github"
 )
 
 func TestGetRandomRepoOnlyOneRepo(t *testing.T) {
-	repository := github.Repository{
-		Name: github.String("test"),
-		Fork: github.Bool(false),
+	repository := PersonalRepo{
+		Name:   "test",
+		IsFork: false,
 	}
-	repos := []*github.Repository{
+	repos := []*PersonalRepo{
 		&repository,
 	}
 
@@ -23,7 +21,7 @@ func TestGetRandomRepoOnlyOneRepo(t *testing.T) {
 }
 
 func TestGetRandomRepoNoRepos(t *testing.T) {
-	repos := []*github.Repository{}
+	repos := []*PersonalRepo{}
 
 	randomRepo := GetRandomRepo(repos)
 	if randomRepo != nil {
@@ -32,16 +30,16 @@ func TestGetRandomRepoNoRepos(t *testing.T) {
 }
 
 func TestGetRandomRepoAllForks(t *testing.T) {
-	repository1 := github.Repository{
-		Name: github.String("test"),
-		Fork: github.Bool(true),
+	repository1 := PersonalRepo{
+		Name:   "test",
+		IsFork: true,
 	}
-	repository2 := github.Repository{
-		Name: github.String("test2"),
-		Fork: github.Bool(true),
+	repository2 := PersonalRepo{
+		Name:   "test2",
+		IsFork: true,
 	}
 
-	repos := []*github.Repository{
+	repos := []*PersonalRepo{
 		&repository1,
 		&repository2,
 	}
@@ -53,35 +51,35 @@ func TestGetRandomRepoAllForks(t *testing.T) {
 }
 
 func TestGetRandomRepoOneGoodOneFork(t *testing.T) {
-	repository := github.Repository{
-		Name: github.String("toBeChosen"),
-		Fork: github.Bool(false),
+	repository := PersonalRepo{
+		Name:   "toBeChosen",
+		IsFork: false,
 	}
 
-	repos := []*github.Repository{
+	repos := []*PersonalRepo{
 		&repository,
 		{
-			Name: github.String("fork"),
-			Fork: github.Bool(true),
+			Name:   "fork",
+			IsFork: true,
 		},
 	}
 
 	randomRepo := GetRandomRepo(repos)
 	if !reflect.DeepEqual(*randomRepo, repository) {
-		t.Fatalf("Only the non-fork can be chosen: %s", randomRepo)
+		t.Fatalf("Only the non-fork can be chosen: %+vs", randomRepo)
 	}
 }
 
 func TestGetReposByLanguageSameLanguage(t *testing.T) {
-	repository := github.Repository{
-		Language: github.String("Language"),
-		Fork:     github.Bool(false),
+	repository := PersonalRepo{
+		Language: "Language",
+		IsFork:   false,
 	}
-	repository2 := github.Repository{
-		Language: github.String("Language"),
-		Fork:     github.Bool(false),
+	repository2 := PersonalRepo{
+		Language: "Language",
+		IsFork:   false,
 	}
-	repos := []*github.Repository{
+	repos := []*PersonalRepo{
 		&repository,
 		&repository2,
 	}
@@ -91,18 +89,16 @@ func TestGetReposByLanguageSameLanguage(t *testing.T) {
 		t.Fatalf("Function shouldn't error with right input")
 	}
 
-	if !reflect.DeepEqual(reposByLang, map[string][]*github.Repository{
+	if !reflect.DeepEqual(reposByLang, map[string][]*PersonalRepo{
 		"Language": {&repository, &repository2},
 	}) {
-		t.Fatalf("should have the right languages: %s", reposByLang)
+		t.Fatalf("should have the right languages: %+vs", reposByLang)
 	}
 }
 
 func TestGetReposByLanguageNilLanguage(t *testing.T) {
-	repository := github.Repository{
-		Language: nil,
-	}
-	repos := []*github.Repository{
+	var repository PersonalRepo
+	repos := []*PersonalRepo{
 		&repository,
 	}
 
@@ -111,21 +107,21 @@ func TestGetReposByLanguageNilLanguage(t *testing.T) {
 		t.Fatalf("Function shouldn't error with right input")
 	}
 
-	if !reflect.DeepEqual(reposByLang, map[string][]*github.Repository{}) {
-		t.Fatalf("With nil language, we should have an empty map: %s", reposByLang)
+	if !reflect.DeepEqual(reposByLang, map[string][]*PersonalRepo{}) {
+		t.Fatalf("With nil language, we should have an empty map: %+v", reposByLang)
 	}
 }
 
 func TestGetReposByLanguageOrder(t *testing.T) {
-	repository := github.Repository{
-		Language: github.String("1"),
-		Fork: github.Bool(false),
+	repository := PersonalRepo{
+		Language: "1",
+		IsFork:   false,
 	}
-	repository2 := github.Repository{
-		Language: github.String("2"),
-		Fork: github.Bool(false),
+	repository2 := PersonalRepo{
+		Language: "2",
+		IsFork:   false,
 	}
-	repos := []*github.Repository{
+	repos := []*PersonalRepo{
 		&repository,
 		&repository2,
 	}

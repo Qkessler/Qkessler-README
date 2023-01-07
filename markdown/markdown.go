@@ -71,15 +71,15 @@ const TEMPLATE_STRING = `
 </svg>`
 
 const REPO_URL_TEMPLATE string = `
-<div align="center">
+<div align="center" style="background: red">
     <a href="{{.Url}}">
         <img src="src/repo-card.svg" width="400" height="400" alt="Repo card which links to the Repo itself, in Github.">
     </a>
 </div>
+
 `
 
-const REPO_ON_TABLE_TEMPLATE string = `
-| [Qkessler/{{.Name1}}]({{.Url1}}) | {{if .Name2}} [Qkessler/{{.Name2}}]({{.Url2}}) {{end}} |
+const REPO_ON_TABLE_TEMPLATE string = `| {{if .IsFork1 }}:small_orange_diamond:{{end}} [{{.Name1}}]({{.Url1}}) | {{if .IsFork2 }}:small_orange_diamond:{{end}} {{if .Name2}} [{{.Name2}}]({{.Url2}}) {{end}} |
 `
 
 func WriteHighlightedRepoUrl(writer io.Writer, url string) error {
@@ -133,15 +133,19 @@ func RepoToStringOnTable(
 	}
 
 	data := struct {
-		Name1 string
-		Url1  string
-		Name2 string
-		Url2  string
+		Name1   string
+		Url1    string
+		IsFork1 bool
+		Name2   string
+		Url2    string
+		IsFork2 bool
 	}{
-		Name1: repository1.Name,
-		Url1:  repository1.URL,
-		Name2: getOrDefault(repository2).Name,
-		Url2:  getOrDefault(repository2).URL,
+		Name1:   repository1.FullName,
+		Url1:    repository1.URL,
+		IsFork1: repository1.IsFork,
+		Name2:   getOrDefault(repository2).FullName,
+		Url2:    getOrDefault(repository2).URL,
+		IsFork2: getOrDefault(repository2).IsFork,
 	}
 
 	return WriteTemplateToWriter(writer, REPO_ON_TABLE_TEMPLATE, data)

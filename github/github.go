@@ -19,8 +19,9 @@ type LangReposAndOrder struct {
 
 type PersonalRepo struct {
 	Name        string
+	FullName    string
 	Description string
-	Fork        bool
+	IsFork      bool
 	Language    string
 	URL         string
 }
@@ -47,7 +48,7 @@ func PullRepositories(
 			PerPage: PER_PAGE_NUMBER,
 		},
 		Type: "public",
-		Sort: "updated",
+		Sort: "push",
 	}
 
 	for {
@@ -75,8 +76,9 @@ func PullRepositories(
 
 		personalRepos = append(personalRepos, &PersonalRepo{
 			Name:        *repo.Name,
+			FullName:    *repo.FullName,
 			Description: *repo.Description,
-			Fork:        *repo.Fork,
+			IsFork:      *repo.Fork,
 			Language:    *repo.Language,
 			URL:         *repo.HTMLURL,
 		})
@@ -103,7 +105,7 @@ func GetRandomRepo(repositories []*PersonalRepo) *PersonalRepo {
 		}
 
 		repo = *repositories[randomIndex]
-		if repo.Fork == false {
+		if repo.IsFork == false {
 			break
 		}
 	}
@@ -117,6 +119,9 @@ func GetReposByLanguage(repositories []*PersonalRepo) (map[string][]*PersonalRep
 
 	for _, repo := range repositories {
 		language := repo.Language
+		if language == "" {
+			continue
+		}
 
 		if repoSlice, present := reposPerLanguage[language]; present {
 			reposPerLanguage[language] = append(repoSlice, repo)
