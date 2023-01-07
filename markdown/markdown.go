@@ -12,7 +12,7 @@ import (
 const ERROR_FIELDS_NIL string = "Name or language is Nil, or Description or URL is nil: %t, %t. Repo name: %s"
 const FORMAT_STRING string = "%s, %s, %s, %s"
 const TEMPLATE_STRING = `
-<svg fill="none" viewBox="0 0 300 300" width="300" height="300" xmlns="http://www.w3.org/2000/svg">
+<svg fill="none" viewBox="0 0 350 200" width="350" height="200" xmlns="http://www.w3.org/2000/svg">
   <foreignObject width="100%" height="100%">
     <div xmlns="http://www.w3.org/1999/xhtml">
       <style>
@@ -73,7 +73,7 @@ const TEMPLATE_STRING = `
 const REPO_URL_TEMPLATE string = `
 <div align="center">
     <a href="{{.Url}}">
-        <img src="src/repo-card.svg" width="300" height="300" alt="Repo card which links to the Repo itself, in Github.">
+        <img src="src/repo-card.svg" alt="Repo card which links to the Repo itself, in Github.">
     </a>
 </div>
 
