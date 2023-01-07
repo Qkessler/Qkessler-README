@@ -3,7 +3,7 @@ package cmd
 import (
 	"bytes"
 	"embed"
-	"fmt"
+	"reflect"
 	"testing"
 )
 
@@ -28,9 +28,46 @@ func TestWriteStaticDescriptionExistentEmbed(t *testing.T) {
 	}
 }
 
-func TestChunks(t *testing.T) {
+func TestChunksEmptySlice(t *testing.T) {
 	slice := []string{}
 	chunkSize := 2
 
-	fmt.Println(chunks(&slice, chunkSize))
+	chunks := chunks(&slice, chunkSize)
+
+	expected := [][]string{{}}
+	if !reflect.DeepEqual(chunks, expected) {
+		t.Fatalf("Chunks should be with empty slice.")
+	}
+}
+
+func TestJoinedSlicesEmpty(t *testing.T) {
+	slice1 := []string{}
+	slice2 := []string{}
+
+	expected := []string{}
+	if !reflect.DeepEqual(joinSlices(&slice1, &slice2), expected) {
+		t.Fatalf("Slices should be the same, empty if no elements.")
+	}
+}
+
+func TestJoinedSlicesOnly1ShouldFillWithEmpty(t *testing.T) {
+	slice1 := []string{"test"}
+	slice2 := []string{}
+
+	expected := []string{"test", ""}
+	joined := joinSlices(&slice1, &slice2)
+	if !reflect.DeepEqual(joined, expected) {
+		t.Fatalf("Slices should be the same, only one element.")
+	}
+}
+
+func TestJoinedSlicesFillRightSide(t *testing.T) {
+	slice1 := []string{}
+	slice2 := []string{"test"}
+
+	expected := []string{"", "test"}
+	joined := joinSlices(&slice1, &slice2)
+	if !reflect.DeepEqual(joined, expected) {
+		t.Fatalf("Slices should be the same, only one element.")
+	}
 }

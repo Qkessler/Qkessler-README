@@ -212,13 +212,14 @@ func joinSlices[T comparable](slice1 *[]T, slice2 *[]T) []T {
 	var rest []T
 	if i < len(*slice1) {
 		rest = (*slice1)[i:]
+		for _, value := range rest {
+			result = append(result, value, *new(T))
+		}
 	} else {
 		rest = (*slice2)[j:]
-	}
-
-	for _, value := range rest {
-		result = append(result, value)
-		result = append(result, *new(T))
+		for _, value := range rest {
+			result = append(result, *new(T), value)
+		}
 	}
 
 	return result
