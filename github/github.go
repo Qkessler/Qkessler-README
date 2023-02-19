@@ -18,12 +18,14 @@ type LangReposAndOrder struct {
 }
 
 type PersonalRepo struct {
-	Name        string
-	FullName    string
-	Description string
-	IsFork      bool
-	Language    string
-	URL         string
+	Name          string
+	FullName      string
+	Description   string
+	IsFork        bool
+	Language      string
+	LanguageColor string
+	StarNumber    int
+	URL           string
 }
 
 func InitGithubClient(context context.Context, accessToken string) *github.Client {
@@ -50,6 +52,16 @@ func PullRepositories(
 		Type: "public",
 		Sort: "push",
 	}
+	colorMap := map[string]string{
+		"Java":       "#B07219",
+		"Python":     "#3572A5",
+		"Go":         "#00ADD8",
+		"Rust":       "#dea584",
+		"Emacs Lisp": "#c065db",
+		"C":          "#555555",
+		"TeX":        "#3D6117",
+		"JavaScript": "#f1e05a",
+	}
 
 	for {
 		repoList, response, err := client.Repositories.List(*context, "", &options)
@@ -75,12 +87,14 @@ func PullRepositories(
 		}
 
 		personalRepos = append(personalRepos, &PersonalRepo{
-			Name:        *repo.Name,
-			FullName:    *repo.FullName,
-			Description: *repo.Description,
-			IsFork:      *repo.Fork,
-			Language:    *repo.Language,
-			URL:         *repo.HTMLURL,
+			Name:          *repo.Name,
+			FullName:      *repo.FullName,
+			Description:   *repo.Description,
+			IsFork:        *repo.Fork,
+			Language:      *repo.Language,
+			LanguageColor: colorMap[*repo.Language],
+			StarNumber:    *repo.StargazersCount,
+			URL:           *repo.HTMLURL,
 		})
 	}
 

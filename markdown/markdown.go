@@ -15,58 +15,43 @@ const TEMPLATE_STRING = `
 <svg fill="none" viewBox="0 0 350 200" width="350" height="200" xmlns="http://www.w3.org/2000/svg">
   <foreignObject width="100%" height="100%">
     <div xmlns="http://www.w3.org/1999/xhtml">
-      <style>
-        .card {
-			width: 300px;
-			box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+		<style>
+		* {
+		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+		}
+		.github-card {
 			background: white;
-			border-radius: 5px;
-			overflow: hidden;
-			margin: 20px;
-			text-align: center;
-			font-family: Arial, Helvetica, sans-serif;
-        }
-
-        .card-link {
-			text-decoration: none;
+			display: block;
+			box-sizing: border-box;
+			border: 1px solid #ccc;
+			margin: 20px/2;
+			padding: 20px;
 			color: black;
-        }
+			text-decoration: none;
+			font-size: 13px;
+			flex: 1;
+			min-width: 250px;
+		}
 
-        .card-header {
-			display: flex;
-			padding: 0px 20px 0px 10px;
-			align-items: center;
-        }
+		.github-card.h3 {
+			margin-top: 0;
+			color: #4078c0;
+			font-size: 15px;
+		}
 
-        .card-title {
-			margin: 20px;
-			font-size: 18px;
-			font-weight: bold;
-        }
-
-        .card-logo {
-			height: 25px;
-			margin-left: 10px;
-        }
-
-        .card-description {
-			margin: 20px;
-			font-size: 14px;
-			text-align: center;
-        }
-      </style>
-      <div class="card">
-        <a href="{{.Url}}" class="card-link">
-          <div class="card-header">
-            <h3 class="card-title">{{.Name}}</h3>
-            <a href="" target="_blank">
-              <img src="{{.ImageSrc}}" alt="Language logo" class="card-logo" />
-            </a>
-          </div>
-          <p class="card-description">{{.Description}}</p>
-        </a>
+      .github-card__meta {
+	    margin-right: 20px;
+	  }
+	  </style>
+      <div class="github-card">
+		<h3>{{.Name}}</h3>
+		<p>{{.Description}}</p>
+        <span class="github-card__meta">
+<span class="github-card__language-icon" style="color: {{.LanguageColor}};">●</span> {{.Language}}
+        </span>
+		<span class="github-card__meta">⭐ {{.StarNumber}}</span>
       </div>
-    </div>
+	</div>
   </foreignObject>
 </svg>`
 
@@ -109,15 +94,19 @@ func WriteTemplateToWriter(writer io.Writer, templateString string, data any) er
 
 func RepoStringToWriter(writer io.Writer, repository *github.PersonalRepo) error {
 	data := struct {
-		Name        string
-		Url         string
-		ImageSrc    string
-		Description string
+		Name          string
+		Url           string
+		Language      string
+		LanguageColor string
+		Description   string
+		StarNumber    int
 	}{
-		Name:        repository.Name,
-		Url:         repository.URL,
-		ImageSrc:    "",
-		Description: repository.Description,
+		Name:          repository.Name,
+		Url:           repository.URL,
+		Language:      repository.Language,
+		LanguageColor: repository.LanguageColor,
+		Description:   repository.Description,
+		StarNumber:    repository.StarNumber,
 	}
 
 	return WriteTemplateToWriter(writer, TEMPLATE_STRING, data)
