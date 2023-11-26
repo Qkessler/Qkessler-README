@@ -6,4 +6,6 @@ Hi there! I'm Quique, and I'm currently working as a SDE at Amazon. I'm part of 
 
 </div>
 
+Note: This README has been built dynamically while learning the Go programming language. The project is called [Qkessler-README](https://github.com/Qkessler/Qkessler-README).
+
 Below you'll find a featured repo, which is **one of my 10th last updated**. Below the repo card, you'll find an ordered list of my repositories and their languages, which shows the languages that I work with the most, and the ones I have been working with as of late, for my personal projects.
